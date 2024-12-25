@@ -1,105 +1,130 @@
-import matplotlib
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import sympy as sp
-import math
-from scipy.integrate import odeint
+import matplotlib  
+import numpy as np  
+import matplotlib.pyplot as plt  
+from matplotlib.animation import FuncAnimation  
+import sympy as sp  
+import math  
+from scipy.integrate import odeint  # Импортируем функцию для численного решения обыкновенных дифференциальных уравнений.
 
-matplotlib.use("TkAgg")
+matplotlib.use("TkAgg") 
 
-t = np.linspace(1, 20, 1001)
+t = np.linspace(1, 20, 1001)  
 
+# Описание системы дифференциальных уравнений
 def odesys(y, t, m1, m2, l, g, alpha):
-    dy = np.zeros(4)
-    dy[0] = y[2]
-    dy[1] = y[3]
+    dy = np.zeros(4)  # Инициализируем массив для производных, состоящий из 4 элементов.
+    dy[0] = y[2]  # Первая производная x (dx/dt) - это скорость по x.
+    dy[1] = y[3]  # Первая производная phi (dphi/dt) - это угловая скорость.
 
-    a11 = m1 + m2
-    a12 = -m2 * l * np.cos(y[1] - alpha)
-    a21 = -np.cos(y[1] - alpha)
-    a22 = l
+    # Параметры для системы уравнений:
+    a11 = m1 + m2  # Сумма масс.
+    a12 = -m2 * l * np.cos(y[1] - alpha)  # Умножение на косинус угла для учитывания углового движения.
+    a21 = -np.cos(y[1] - alpha)  # Это используется для связывания движения двух масс.
+    a22 = l  # Длина подвеса.
 
-    b1 = (m1 + m2) * g * np.sin(alpha) - m2 * l * (y[3])**2 * np.sin(y[1] - alpha)
-    b2 = -g * np.sin(y[1])
+    b1 = (m1 + m2) * g * np.sin(alpha) - m2 * l * (y[3])**2 * np.sin(y[1] - alpha)  # Уравнение для ускорения x.
+    b2 = -g * np.sin(y[1])  # Уравнение для ускорения phi.
 
-    dy[2] = (b1 * a22 - a12 * b2) / (a11 * a22 - a21 * a12)
-    dy[3] = (b2 * a11 - b1 * a21) / (a11 * a22 - a21 * a12)
+    # Решаем уравнения для ускорений по x и phi:
+    dy[2] = (b1 * a22 - a12 * b2) / (a11 * a22 - a21 * a12)  # Ускорение по x.
+    dy[3] = (b2 * a11 - b1 * a21) / (a11 * a22 - a21 * a12)  # Ускорение по phi.
 
-    return dy
+    return dy  # Возвращаем массив с производными.
 
-m1 = 1
-m2 = 500
-l = 5
-g = 9.81
-alpha = math.pi / 4
+# Инициализация параметров модели.
+m1 = 1  # Масса первого объекта.
+m2 = 500  # Масса второго объекта.
+l = 5  # Длина подвеса.
+g = 9.81  # Ускорение свободного падения.
+alpha = math.pi / 4  # Начальный угол (в радианах).
 
-x0 = 0
-phi0 = 0
-dx0 = 0
-dphi0 = 12
-y0 = [x0, phi0, dx0, dphi0]
+# Начальные условия: положение и скорости.
+x0 = 0  # Начальное положение x.
+phi0 = 0  # Начальный угол phi.
+dx0 = 0  # Начальная скорость по x.
+dphi0 = 12  # Начальная угловая скорость.
 
+y0 = [x0, phi0, dx0, dphi0]  # Вектор начальных условий.
+
+# Решаем систему дифференциальных уравнений 
 Y = odeint(odesys, y0, t, (m1, m2, l, g, alpha))
 
-# print(Y.shape)
+# Извлекаем компоненты решения из матрицы Y.
+x = Y[:, 0]  # Положение x во времени.
+phi = Y[:, 1]  # Угол phi во времени.
+dx = Y[:, 2]  # Скорость по x во времени.
+dphi = Y[:, 3]  # Угловая скорость во времени.
 
-x = Y[:, 0]
-phi = Y[:, 1]
-dx = Y[:, 2]
-dphi = Y[:, 3]
+# Параметры для рисования.
 X_0 = 4
 a = 2.5
 b = 3
 
-X_A = -a / 40 * x
-Y_A = X_A
-Y_B = Y_A - l * np.sin(math.pi / 1.2 - phi)
-X_B = X_A + l * np.cos(math.pi / 1.2 - phi)
-# X_B = X_A + l * np.cos(phi) 
-# Y_B = Y_A - l * np.sin(phi)
-X_Box = np.array([-0.75, -1.3, 0.2, 0.75, -0.75])
-Y_Box = np.array([-0.75, -0.25, 1.25, 0.75, -0.75])
+# Вычисляем координаты точек A и B, которые будут использоваться для рисования.
+X_A = -a / 40 * x  # Преобразуем координату x для точки A.
+Y_A = X_A  # Координата y для точки A 
+Y_B = Y_A - l * np.sin(math.pi / 1.2 - phi)  # Вычисляем координаты y для точки B.
+X_B = X_A + l * np.cos(math.pi / 1.2 - phi)  # Вычисляем координаты x для точки B.
 
-X_Straight = [-10, 0, 10]
-Y_Straight = [-10, 0, 10]
+# Определяем параметры коробки.
+X_Box = np.array([-0.75, -1.3, 0.2, 0.75, -0.75])  # Координаты X коробки.
+Y_Box = np.array([-0.75, -0.25, 1.25, 0.75, -0.75])  # Координаты Y коробки.
 
-fig = plt.figure(figsize = [9, 5])
-ax = fig.add_subplot(1, 1, 1)
-ax.axis('equal')
-ax.set(xlim = [-5, 5], ylim = [-5, 5])
+# Линии для рисования.
+X_Straight = [-10, 0, 10]  
+Y_Straight = [-10, 0, 10]  
 
-ax.plot(X_Straight, Y_Straight)
-Drawed_Box = ax.plot(X_A[0] + X_Box,Y_A[0] + Y_Box)[0]
-Line_AB = ax.plot([X_A[0], X_B[0],], [Y_A[0], Y_B[0]])[0]
-Point_A = ax.plot(X_A[0], Y_A[0], marker = 'o')[0]
-Point_B = ax.plot(X_B[0], Y_B[0], marker = 'o', markersize = 5)[0]
+# Создаем фигуру и добавляем подграфики.
+fig = plt.figure(figsize=[9, 5])  # Создаем фигуру для графиков.
+ax = fig.add_subplot(1, 1, 1)  # Добавляем подграфик.
+ax.axis('equal')  # Устанавливаем одинаковые масштабы для осей X и Y.
+ax.set(xlim=[-5, 5], ylim=[-5, 5])  # Устанавливаем пределы для осей.
 
-fig2 = plt.figure(figsize = [9, 5])
+# Рисуем линию.
+ax.plot(X_Straight, Y_Straight)  
+
+# Рисуем коробку, которая будет следовать за точкой A.
+Drawed_Box = ax.plot(X_A[0] + X_Box, Y_A[0] + Y_Box)[0]
+
+# Рисуем линию между точками A и B.
+Line_AB = ax.plot([X_A[0], X_B[0]], [Y_A[0], Y_B[0]])[0]
+
+# Рисуем точки A и B.
+Point_A = ax.plot(X_A[0], Y_A[0], marker='o')[0]  
+Point_B = ax.plot(X_B[0], Y_B[0], marker='o', markersize=5)[0]
+
+# Создаем вторую фигуру для графиков изменений во времени.
+fig2 = plt.figure(figsize=[9, 5])
+
+# Графики для изменения координат и скоростей во времени.
 ax2 = fig2.add_subplot(2, 2, 1)
-ax2.plot(t, -x)
+ax2.plot(t, -x)  # График x(t).
 plt.title('x(t)')
 
 ax3 = fig2.add_subplot(2, 2, 2)
-ax3.plot(t, phi)
+ax3.plot(t, phi)  # График phi(t).
 plt.title('phi(t)')
 
 ax4 = fig2.add_subplot(2, 2, 3)
-ax4.plot(t, dx)
+ax4.plot(t, dx)  # График dx(t).
 plt.title('dx(t)')
 
 ax5 = fig2.add_subplot(2, 2, 4)
-ax5.plot(t, dphi)
+ax5.plot(t, dphi)  # График dphi(t).
 plt.title('dphi(t)')
 
+# Настройки для подграфиков.
 plt.subplots_adjust(wspace=0.3, hspace=0.7)
 
+# Функция для обновления анимации.
 def Kino(i):
-    Point_A.set_data(X_A[i], Y_A[i])
-    Point_B.set_data(X_B[i], Y_B[i])
-    Line_AB.set_data([X_A[i], X_B[i],], [Y_A[i], Y_B[i]])
-    Drawed_Box.set_data(X_A[i] + X_Box, Y_A[i] + Y_Box)
-    return [Point_A, Point_B, Line_AB, Drawed_Box] 
+    Point_A.set_data(X_A[i], Y_A[i])  # Обновляем позицию точки A.
+    Point_B.set_data(X_B[i], Y_B[i])  # Обновляем позицию точки B.
+    Line_AB.set_data([X_A[i], X_B[i]], [Y_A[i], Y_B[i]])  # Обновляем линию между точками.
+    Drawed_Box.set_data(X_A[i] + X_Box, Y_A[i] + Y_Box)  # Обновляем позицию коробки.
+    return [Point_A, Point_B, Line_AB, Drawed_Box]  # Возвращаем обновленные элементы.
 
-anima = FuncAnimation(fig, Kino,frames = 1000, interval = 50)
-plt.show()
+# Создаем анимацию, которая будет обновляться для каждого кадра.
+anima = FuncAnimation(fig, Kino, frames=1000, interval=50)  # Настройка анимации: 1000 кадров, интервал 50 миллисекунд.
+
+plt.show()  # Отображаем все графики и анимацию.
